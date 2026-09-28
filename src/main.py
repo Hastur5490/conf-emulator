@@ -1,8 +1,11 @@
 import tkinter as tk
 from tkinter import scrolledtext
+import getpass
 
 root = tk.Tk()
 
+username = getpass.getuser()
+root.title(f"Эмулятор пользователя - [{username}]")
 root.geometry("800x800")
 root.configure(bg="#121212")
 
