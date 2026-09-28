@@ -28,10 +28,23 @@ def proccess_command(event=None):
 
     expanded_command = os.path.expandvars(command)
 
+    parts = expanded_command.split()
+    cmd = parts[0]
+    args = parts[1:]
+
     output.config(state="normal")
-    output.insert(tk.END, f"$ {command}\n")          # ← вот здесь исправление (пробел после $)
-    if expanded_command != command:
-        output.insert(tk.END, f"раскрыто: {expanded_command}\n")
+    output.insert(tk.END, f"$ {command}\n")
+
+    if cmd == "ls":
+        output.insert(tk.END, f"Команда: ls\n")
+        output.insert(tk.END, f"Аргументы: {args}\n")
+    elif cmd == "cd":
+        output.insert(tk.END, f"Команда: cd\n")
+        output.insert(tk.END, f"Аргументы: {args}\n")
+    else:
+        output.insert(tk.END, f"Команда не найдена: {cmd}\n")
+
+    output.insert(tk.END, "\n")
     output.see(tk.END)
     output.config(state="disabled")
 
