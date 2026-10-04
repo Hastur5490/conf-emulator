@@ -181,6 +181,20 @@ def main():
     print(f"VFS path    : {args.vfs}")
     print(f"Script path : {args.script}")
 
+    global vfs
+
+    if args.vfs:
+        print(f"Загрузка VFS из файла: {args.vfs}")
+        vfs = load_vfs_from_csv(args.vfs)
+        if vfs is None:
+            print("Не удалось загрузить VFS. Завершение работы.")
+            return
+    else:
+        print("Путь к VFS не указан. Создаётся VFS по умолчанию.")
+        vfs = create_default_vfs()
+
+    print(f"VFS успешно загружена. Объектов: {len(vfs)}")
+
     global root, output, command_entry
 
     username = getpass.getuser()
