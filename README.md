@@ -18,7 +18,7 @@
 
 ### Запуск
 
-```bash
+
 run.bat
 
 ## Этап 2. Конфигурация
@@ -40,6 +40,5 @@ run.bat
 
 ### Запуск
 
-```bash
 python src/main.py
 python src/main.py --vfs C:\path\to\vfs --script test_script.txt
