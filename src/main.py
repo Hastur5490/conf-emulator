@@ -56,7 +56,7 @@ def create_default_vfs():
 
 def execute_script(script_path):
     """Выполняет стартовый скрипт. Останавливается при первой ошибке."""
-    global output, command_entry, root
+    global output, command_entry, root, current_dir
 
     try:
         with open(script_path, "r", encoding="utf-8") as f:
@@ -86,26 +86,77 @@ def execute_script(script_path):
         output.config(state="normal")
 
         if cmd == "ls":
-            output.insert(tk.END, f"Команда: ls\n")
-            output.insert(tk.END, f"Аргументы: {args}\n")
+            target = args[0] if args else current_dir
+
+            if not target.startswith("/"):
+                target = current_dir.rstrip("/") + "/" + target
+            if target != "/":
+                target = target.rstrip("/")
+
+            items = []
+            prefix = target if target.endswith("/") else target + "/"
+            if target == "/":
+                prefix = "/"
+
+            for path in vfs:
+                if path == target:
+                    continue
+                if path.startswith(prefix):
+                    relative = path[len(prefix):].lstrip("/")
+                    if "/" not in relative and relative:
+                        items.append(relative)
+
+            if not items and target not in vfs:
+                output.insert(tk.END, f"Ошибка: нет такого файла или каталога: {target}\n")
+            else:
+                if items:
+                    output.insert(tk.END, "  ".join(sorted(items)) + "\n")
+                else:
+                    output.insert(tk.END, "\n")
         elif cmd == "cd":
+
             if len(args) > 1:
                 output.insert(tk.END, "Ошибка: слишком много аргументов\n")
                 output.insert(tk.END, "Использование: cd [путь]\n")
-                output.insert(tk.END, "\n")
-                output.see(tk.END)
-                output.config(state="disabled")
-                print(f"Скрипт остановлен из-за ошибки в команде: {command}")
-                return  # Останавливаемся при ошибке
             else:
-                output.insert(tk.END, f"Команда: cd\n")
-                output.insert(tk.END, f"Аргументы: {args}\n")
+                if not args:
+                    # cd без аргументов — переход в корень
+                    current_dir = "/"
+                    output.insert(tk.END, f"Текущая директория: {current_dir}\n")
+                else:
+                    target = args[0]
+
+                    # Обработка относительного пути
+                    if not target.startswith("/"):
+                        if current_dir == "/":
+                            target = "/" + target
+                        else:
+                            target = current_dir.rstrip("/") + "/" + target
+
+                    # Убираем лишний слэш в конце
+                    if target != "/":
+                        target = target.rstrip("/")
+
+                    # Проверяем существование
+                    if target in vfs and vfs[target]["type"] == "dir":
+                        current_dir = target
+                        output.insert(tk.END, f"Текущая директория: {current_dir}\n")
+                    else:
+                        output.insert(tk.END, f"Ошибка: нет такого файла или каталога: {target}\n")
         elif cmd == "exit":
             output.insert(tk.END, "Выход из эмулятора...\n")
             output.see(tk.END)
             output.config(state="disabled")
             root.after(400, root.destroy)
             return
+        elif cmd == "uname":
+            output.insert(tk.END, "UNIX Shell Emulator\n")   
+        elif cmd == "rev":
+            if not args:
+                output.insert(tk.END, "\n")
+            else:
+                for arg in args:
+                    output.insert(tk.END, arg[::-1] + "\n")
         else:
             output.insert(tk.END, f"Ошибка: команда не найдена: {cmd}\n")
             output.insert(tk.END, "\n")
@@ -120,7 +171,7 @@ def execute_script(script_path):
 
 def proccess_command(event=None):
     """Обработка введенной функции пользователем"""
-    global output, command_entry, root
+    global output, command_entry, root, current_dir
 
     command = command_entry.get().strip()
     command_entry.delete(0, tk.END)
@@ -165,11 +216,35 @@ def proccess_command(event=None):
             else:
                 output.insert(tk.END, "\n")
     elif cmd == "cd":
+
         if len(args) > 1:
             output.insert(tk.END, "Ошибка: слишком много аргументов\n")
+            output.insert(tk.END, "Использование: cd [путь]\n")
         else:
-            output.insert(tk.END, f"Команда: cd\n")
-            output.insert(tk.END, f"Аргумент: {args}\n")
+            if not args:
+                # cd без аргументов — переход в корень
+                current_dir = "/"
+                output.insert(tk.END, f"Текущая директория: {current_dir}\n")
+            else:
+                target = args[0]
+
+                # Обработка относительного пути
+                if not target.startswith("/"):
+                    if current_dir == "/":
+                        target = "/" + target
+                    else:
+                        target = current_dir.rstrip("/") + "/" + target
+
+                # Убираем лишний слэш в конце
+                if target != "/":
+                    target = target.rstrip("/")
+
+                # Проверяем существование
+                if target in vfs and vfs[target]["type"] == "dir":
+                    current_dir = target
+                    output.insert(tk.END, f"Текущая директория: {current_dir}\n")
+                else:
+                    output.insert(tk.END, f"Ошибка: нет такого файла или каталога: {target}\n")
     elif cmd == "exit":
         if len(args) > 0:
             output.insert(tk.END, "Ошибка: команда exit не принимает аргументы")
@@ -179,6 +254,14 @@ def proccess_command(event=None):
             output.config(state="disabled")
             root.after(350, root.destroy)
             return
+    elif cmd == "uname":
+        output.insert(tk.END, "UNIX Shell Emulator\n")
+    elif cmd == "rev":
+        if not args:
+            output.insert(tk.END, "\n")
+        else:
+            for arg in args:
+                output.insert(tk.END, arg[::-1] + "\n")
     else:
         output.insert(tk.END, f"Команда не найдена: {cmd}\n")
 
