@@ -214,6 +214,27 @@ def execute_script(script_path):
                     else:
                         del vfs[target]
                         output.insert(tk.END, f"Удалено: {target}\n")
+        elif cmd == "chown":
+            if len(args) != 2:
+                output.insert(tk.END, "Ошибка: использование: chown владелец путь\n")
+            else:
+                owner = args[0]
+                target = args[1]
+
+                # Нормализация пути
+                if not target.startswith("/"):
+                    if current_dir == "/":
+                        target = "/" + target
+                    else:
+                        target = current_dir.rstrip("/") + "/" + target
+                if target != "/":
+                    target = target.rstrip("/")
+
+                if target not in vfs:
+                    output.insert(tk.END, f"Ошибка: нет такого файла или каталога: {target}\n")
+                else:
+                    vfs[target]["owner"] = owner
+                    output.insert(tk.END, f"Владелец {target} изменён на {owner}\n")
         else:
             output.insert(tk.END, f"Ошибка: команда не найдена: {cmd}\n")
             output.insert(tk.END, "\n")
@@ -377,6 +398,27 @@ def proccess_command(event=None):
                 else:
                     del vfs[target]
                     output.insert(tk.END, f"Удалено: {target}\n")
+    elif cmd == "chown":
+        if len(args) != 2:
+            output.insert(tk.END, "Ошибка: использование: chown владелец путь\n")
+        else:
+            owner = args[0]
+            target = args[1]
+
+            # Нормализация пути
+            if not target.startswith("/"):
+                if current_dir == "/":
+                    target = "/" + target
+                else:
+                    target = current_dir.rstrip("/") + "/" + target
+            if target != "/":
+                target = target.rstrip("/")
+
+            if target not in vfs:
+                output.insert(tk.END, f"Ошибка: нет такого файла или каталога: {target}\n")
+            else:
+                vfs[target]["owner"] = owner
+                output.insert(tk.END, f"Владелец {target} изменён на {owner}\n")
     else:
         output.insert(tk.END, f"Команда не найдена: {cmd}\n")
 
