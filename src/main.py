@@ -8,6 +8,8 @@ import csv
 import base64
 from io import StringIO
 
+current_dir = "/"
+
 
 def load_vfs_from_csv(path):
     """Загружает VFS из CSV-файла в память."""
@@ -135,8 +137,33 @@ def proccess_command(event=None):
     output.insert(tk.END, f"$ {command}\n")
 
     if cmd == "ls":
-        output.insert(tk.END, f"Команда: ls\n")
-        output.insert(tk.END, f"Аргумент: {args}\n")
+        target = args[0] if args else current_dir
+
+        if not target.startswith("/"):
+            target = current_dir.rstrip("/") + "/" + target
+        if target != "/":
+            target = target.rstrip("/")
+
+        items = []
+        prefix = target if target.endswith("/") else target + "/"
+        if target == "/":
+            prefix = "/"
+
+        for path in vfs:
+            if path == target:
+                continue
+            if path.startswith(prefix):
+                relative = path[len(prefix):].lstrip("/")
+                if "/" not in relative and relative:
+                    items.append(relative)
+
+        if not items and target not in vfs:
+            output.insert(tk.END, f"Ошибка: нет такого файла или каталога: {target}\n")
+        else:
+            if items:
+                output.insert(tk.END, "  ".join(sorted(items)) + "\n")
+            else:
+                output.insert(tk.END, "\n")
     elif cmd == "cd":
         if len(args) > 1:
             output.insert(tk.END, "Ошибка: слишком много аргументов\n")
