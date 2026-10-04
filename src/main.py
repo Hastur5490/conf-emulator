@@ -5,6 +5,70 @@ import os
 import argparse
 import socket
 
+def execute_script(script_path):
+    """Выполняет стартовый скрипт. Останавливается при первой ошибке."""
+    global output, command_entry, root
+
+    try:
+        with open(script_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    except FileNotFoundError:
+        print(f"Ошибка: файл скрипта не найден: {script_path}")
+        return
+    except Exception as e:
+        print(f"Ошибка при чтении скрипта: {e}")
+        return
+
+    for line in lines:
+        command = line.strip()
+
+        if not command or command.startswith("#"):
+            continue
+
+        output.config(state="normal")
+        output.insert(tk.END, f"$ {command}\n")
+        output.config(state="disabled")
+
+        expanded = os.path.expandvars(command)
+        parts = expanded.split()
+        cmd = parts[0]
+        args = parts[1:]
+
+        output.config(state="normal")
+
+        if cmd == "ls":
+            output.insert(tk.END, f"Команда: ls\n")
+            output.insert(tk.END, f"Аргументы: {args}\n")
+        elif cmd == "cd":
+            if len(args) > 1:
+                output.insert(tk.END, "Ошибка: слишком много аргументов\n")
+                output.insert(tk.END, "Использование: cd [путь]\n")
+                output.insert(tk.END, "\n")
+                output.see(tk.END)
+                output.config(state="disabled")
+                print(f"Скрипт остановлен из-за ошибки в команде: {command}")
+                return  # Останавливаемся при ошибке
+            else:
+                output.insert(tk.END, f"Команда: cd\n")
+                output.insert(tk.END, f"Аргументы: {args}\n")
+        elif cmd == "exit":
+            output.insert(tk.END, "Выход из эмулятора...\n")
+            output.see(tk.END)
+            output.config(state="disabled")
+            root.after(400, root.destroy)
+            return
+        else:
+            output.insert(tk.END, f"Ошибка: команда не найдена: {cmd}\n")
+            output.insert(tk.END, "\n")
+            output.see(tk.END)
+            output.config(state="disabled")
+            print(f"Скрипт остановлен из-за ошибки в команде: {command}")
+            return  # Останавливаемся при ошибке
+
+        output.insert(tk.END, "\n")
+        output.see(tk.END)
+        output.config(state="disabled")
+
 def proccess_command(event=None):
     """Обработка введенной функции пользователем"""
     global output, command_entry, root
@@ -102,6 +166,9 @@ def main():
     command_entry.pack(fill=tk.X, padx=5, pady=5)
     command_entry.focus()
     command_entry.bind("<Return>", proccess_command)
+
+    if args.script:
+        root.after(100, lambda: execute_script(args.script))
 
     root.mainloop()
 
