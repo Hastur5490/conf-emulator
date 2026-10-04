@@ -182,6 +182,38 @@ def execute_script(script_path):
 
                 if not found:
                     output.insert(tk.END, f"Ошибка: путь не найден: {start_path}\n")
+        elif cmd == "rm":
+            if not args:
+                output.insert(tk.END, "Ошибка: укажите путь\n")
+            elif len(args) > 1:
+                output.insert(tk.END, "Ошибка: слишком много аргументов\n")
+            else:
+                target = args[0]
+
+                # Нормализация пути
+                if not target.startswith("/"):
+                    if current_dir == "/":
+                        target = "/" + target
+                    else:
+                        target = current_dir.rstrip("/") + "/" + target
+                if target != "/":
+                    target = target.rstrip("/")
+
+                if target not in vfs:
+                    output.insert(tk.END, f"Ошибка: нет такого файла или каталога: {target}\n")
+                elif target == "/":
+                    output.insert(tk.END, "Ошибка: нельзя удалить корневую директорию\n")
+                else:
+                    # Проверяем, есть ли вложенные элементы
+                    has_children = any(
+                        p != target and p.startswith(target + "/")
+                        for p in vfs
+                    )
+                    if has_children:
+                        output.insert(tk.END, f"Ошибка: директория не пуста: {target}\n")
+                    else:
+                        del vfs[target]
+                        output.insert(tk.END, f"Удалено: {target}\n")
         else:
             output.insert(tk.END, f"Ошибка: команда не найдена: {cmd}\n")
             output.insert(tk.END, "\n")
@@ -313,6 +345,38 @@ def proccess_command(event=None):
 
             if not found:
                 output.insert(tk.END, f"Ошибка: путь не найден: {start_path}\n")
+    elif cmd == "rm":
+        if not args:
+            output.insert(tk.END, "Ошибка: укажите путь\n")
+        elif len(args) > 1:
+            output.insert(tk.END, "Ошибка: слишком много аргументов\n")
+        else:
+            target = args[0]
+
+            # Нормализация пути
+            if not target.startswith("/"):
+                if current_dir == "/":
+                    target = "/" + target
+                else:
+                    target = current_dir.rstrip("/") + "/" + target
+            if target != "/":
+                target = target.rstrip("/")
+
+            if target not in vfs:
+                output.insert(tk.END, f"Ошибка: нет такого файла или каталога: {target}\n")
+            elif target == "/":
+                output.insert(tk.END, "Ошибка: нельзя удалить корневую директорию\n")
+            else:
+                # Проверяем, есть ли вложенные элементы
+                has_children = any(
+                    p != target and p.startswith(target + "/")
+                    for p in vfs
+                )
+                if has_children:
+                    output.insert(tk.END, f"Ошибка: директория не пуста: {target}\n")
+                else:
+                    del vfs[target]
+                    output.insert(tk.END, f"Удалено: {target}\n")
     else:
         output.insert(tk.END, f"Команда не найдена: {cmd}\n")
 
