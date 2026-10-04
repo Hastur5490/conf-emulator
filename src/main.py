@@ -114,7 +114,6 @@ def execute_script(script_path):
                 else:
                     output.insert(tk.END, "\n")
         elif cmd == "cd":
-
             if len(args) > 1:
                 output.insert(tk.END, "Ошибка: слишком много аргументов\n")
                 output.insert(tk.END, "Использование: cd [путь]\n")
@@ -157,6 +156,32 @@ def execute_script(script_path):
             else:
                 for arg in args:
                     output.insert(tk.END, arg[::-1] + "\n")
+        elif cmd == "find":
+            if not args:
+                # Показать всё содержимое VFS
+                for path in sorted(vfs.keys()):
+                    output.insert(tk.END, path + "\n")
+            else:
+                start_path = args[0]
+
+                # Нормализация пути
+                if not start_path.startswith("/"):
+                    if current_dir == "/":
+                        start_path = "/" + start_path
+                    else:
+                        start_path = current_dir.rstrip("/") + "/" + start_path
+
+                if start_path != "/":
+                    start_path = start_path.rstrip("/")
+
+                found = False
+                for path in sorted(vfs.keys()):
+                    if path == start_path or path.startswith(start_path + "/"):
+                        output.insert(tk.END, path + "\n")
+                        found = True
+
+                if not found:
+                    output.insert(tk.END, f"Ошибка: путь не найден: {start_path}\n")
         else:
             output.insert(tk.END, f"Ошибка: команда не найдена: {cmd}\n")
             output.insert(tk.END, "\n")
@@ -262,6 +287,32 @@ def proccess_command(event=None):
         else:
             for arg in args:
                 output.insert(tk.END, arg[::-1] + "\n")
+    elif cmd == "find":
+        if not args:
+            # Показать всё содержимое VFS
+            for path in sorted(vfs.keys()):
+                output.insert(tk.END, path + "\n")
+        else:
+            start_path = args[0]
+
+            # Нормализация пути
+            if not start_path.startswith("/"):
+                if current_dir == "/":
+                    start_path = "/" + start_path
+                else:
+                    start_path = current_dir.rstrip("/") + "/" + start_path
+
+            if start_path != "/":
+                start_path = start_path.rstrip("/")
+
+            found = False
+            for path in sorted(vfs.keys()):
+                if path == start_path or path.startswith(start_path + "/"):
+                    output.insert(tk.END, path + "\n")
+                    found = True
+
+            if not found:
+                output.insert(tk.END, f"Ошибка: путь не найден: {start_path}\n")
     else:
         output.insert(tk.END, f"Команда не найдена: {cmd}\n")
 
