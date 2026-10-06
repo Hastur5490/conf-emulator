@@ -56,7 +56,7 @@ def create_default_vfs():
 
 def execute_script(script_path):
     """Выполняет стартовый скрипт. Останавливается при первой ошибке."""
-    global output, command_entry, root, current_dir
+    global output, command_entry, root, current_dir, vfs
 
     try:
         with open(script_path, "r", encoding="utf-8") as f:
@@ -119,29 +119,26 @@ def execute_script(script_path):
                 output.insert(tk.END, "Использование: cd [путь]\n")
             else:
                 if not args:
-                    # cd без аргументов — переход в корень
                     current_dir = "/"
                     output.insert(tk.END, f"Текущая директория: {current_dir}\n")
                 else:
                     target = args[0]
 
-                    # Обработка относительного пути
                     if not target.startswith("/"):
                         if current_dir == "/":
                             target = "/" + target
                         else:
                             target = current_dir.rstrip("/") + "/" + target
 
-                    # Убираем лишний слэш в конце
                     if target != "/":
                         target = target.rstrip("/")
 
-                    # Проверяем существование
                     if target in vfs and vfs[target]["type"] == "dir":
                         current_dir = target
                         output.insert(tk.END, f"Текущая директория: {current_dir}\n")
                     else:
-                        output.insert(tk.END, f"Ошибка: нет такого файла или каталога: {target}\n")
+                        output.insert(tk.END, 
+                                      f"Ошибка: нет такого файла или каталога: {target}\n")
         elif cmd == "exit":
             output.insert(tk.END, "Выход из эмулятора...\n")
             output.see(tk.END)
@@ -158,13 +155,11 @@ def execute_script(script_path):
                     output.insert(tk.END, arg[::-1] + "\n")
         elif cmd == "find":
             if not args:
-                # Показать всё содержимое VFS
                 for path in sorted(vfs.keys()):
                     output.insert(tk.END, path + "\n")
             else:
                 start_path = args[0]
 
-                # Нормализация пути
                 if not start_path.startswith("/"):
                     if current_dir == "/":
                         start_path = "/" + start_path
@@ -190,7 +185,6 @@ def execute_script(script_path):
             else:
                 target = args[0]
 
-                # Нормализация пути
                 if not target.startswith("/"):
                     if current_dir == "/":
                         target = "/" + target
@@ -204,7 +198,6 @@ def execute_script(script_path):
                 elif target == "/":
                     output.insert(tk.END, "Ошибка: нельзя удалить корневую директорию\n")
                 else:
-                    # Проверяем, есть ли вложенные элементы
                     has_children = any(
                         p != target and p.startswith(target + "/")
                         for p in vfs
@@ -221,7 +214,6 @@ def execute_script(script_path):
                 owner = args[0]
                 target = args[1]
 
-                # Нормализация пути
                 if not target.startswith("/"):
                     if current_dir == "/":
                         target = "/" + target
@@ -235,13 +227,26 @@ def execute_script(script_path):
                 else:
                     vfs[target]["owner"] = owner
                     output.insert(tk.END, f"Владелец {target} изменён на {owner}\n")
+        elif cmd == "vfs-load":
+            if len(args) != 1:
+                output.insert(tk.END, "Ошибка: использование: vfs-load путь\n")
+            else:
+                new_vfs = load_vfs_from_csv(args[0])
+                if new_vfs is None:
+                    output.insert(tk.END, f"Ошибка: не удалось загрузить VFS из {args[0]}\n")
+                else:
+                    vfs = new_vfs
+                    current_dir = "/"
+                    output.insert(tk.END, f"VFS успешно загружена из {args[0]}\n")
+                    output.insert(tk.END, f"Объектов: {len(vfs)}\n")
+                    output.insert(tk.END, f"Текущая директория сброшена в /\n")
         else:
             output.insert(tk.END, f"Ошибка: команда не найдена: {cmd}\n")
             output.insert(tk.END, "\n")
             output.see(tk.END)
             output.config(state="disabled")
             print(f"Скрипт остановлен из-за ошибки в команде: {command}")
-            return  # Останавливаемся при ошибке
+            return  
 
         output.insert(tk.END, "\n")
         output.see(tk.END)
@@ -249,7 +254,7 @@ def execute_script(script_path):
 
 def proccess_command(event=None):
     """Обработка введенной функции пользователем"""
-    global output, command_entry, root, current_dir
+    global output, command_entry, root, current_dir, vfs
 
     command = command_entry.get().strip()
     command_entry.delete(0, tk.END)
@@ -300,24 +305,20 @@ def proccess_command(event=None):
             output.insert(tk.END, "Использование: cd [путь]\n")
         else:
             if not args:
-                # cd без аргументов — переход в корень
                 current_dir = "/"
                 output.insert(tk.END, f"Текущая директория: {current_dir}\n")
             else:
                 target = args[0]
 
-                # Обработка относительного пути
                 if not target.startswith("/"):
                     if current_dir == "/":
                         target = "/" + target
                     else:
                         target = current_dir.rstrip("/") + "/" + target
 
-                # Убираем лишний слэш в конце
                 if target != "/":
                     target = target.rstrip("/")
 
-                # Проверяем существование
                 if target in vfs and vfs[target]["type"] == "dir":
                     current_dir = target
                     output.insert(tk.END, f"Текущая директория: {current_dir}\n")
@@ -342,13 +343,11 @@ def proccess_command(event=None):
                 output.insert(tk.END, arg[::-1] + "\n")
     elif cmd == "find":
         if not args:
-            # Показать всё содержимое VFS
             for path in sorted(vfs.keys()):
                 output.insert(tk.END, path + "\n")
         else:
             start_path = args[0]
 
-            # Нормализация пути
             if not start_path.startswith("/"):
                 if current_dir == "/":
                     start_path = "/" + start_path
@@ -374,7 +373,6 @@ def proccess_command(event=None):
         else:
             target = args[0]
 
-            # Нормализация пути
             if not target.startswith("/"):
                 if current_dir == "/":
                     target = "/" + target
@@ -388,7 +386,6 @@ def proccess_command(event=None):
             elif target == "/":
                 output.insert(tk.END, "Ошибка: нельзя удалить корневую директорию\n")
             else:
-                # Проверяем, есть ли вложенные элементы
                 has_children = any(
                     p != target and p.startswith(target + "/")
                     for p in vfs
@@ -405,7 +402,6 @@ def proccess_command(event=None):
             owner = args[0]
             target = args[1]
 
-            # Нормализация пути
             if not target.startswith("/"):
                 if current_dir == "/":
                     target = "/" + target
@@ -419,6 +415,19 @@ def proccess_command(event=None):
             else:
                 vfs[target]["owner"] = owner
                 output.insert(tk.END, f"Владелец {target} изменён на {owner}\n")
+    elif cmd == "vfs-load":
+        if len(args) != 1:
+            output.insert(tk.END, "Ошибка: использование: vfs-load путь\n")
+        else:
+            new_vfs = load_vfs_from_csv(args[0])
+            if new_vfs is None:
+                output.insert(tk.END, f"Ошибка: не удалось загрузить VFS из {args[0]}\n")
+            else:
+                vfs = new_vfs
+                current_dir = "/"
+                output.insert(tk.END, f"VFS успешно загружена из {args[0]}\n")
+                output.insert(tk.END, f"Объектов: {len(vfs)}\n")
+                output.insert(tk.END, f"Текущая директория сброшена в /\n")
     else:
         output.insert(tk.END, f"Команда не найдена: {cmd}\n")
 
@@ -443,7 +452,6 @@ def main():
     )
     args = parser.parse_args()
 
-    # Отладочный вывод всех параметров
     print("\tОтладочный вывод параметров")
     print(f"VFS path    : {args.vfs}")
     print(f"Script path : {args.script}")
@@ -472,7 +480,6 @@ def main():
     root.geometry("800x600")
     root.configure(bg="#121212")
 
-    # Область вывода
     output = scrolledtext.ScrolledText(
         root,
         bg="#1e1e1e",
@@ -483,7 +490,6 @@ def main():
     output.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
     output.config(state="disabled")
 
-    # Поле ввода
     command_entry = tk.Entry(
         root,
         bg="#2d2d2d",
